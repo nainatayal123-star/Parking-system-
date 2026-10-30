@@ -216,3 +216,4 @@ void adminMenu(void); /* report, pass options */
 /* main() is also written by Person 3 */
 
 #endif
+printf("sdf\n");
