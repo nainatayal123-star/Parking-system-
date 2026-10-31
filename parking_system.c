@@ -216,4 +216,276 @@ void adminMenu(void); /* report, pass options */
 /* main() is also written by Person 3 */
 
 #endif
-printf("sdf\n");
+
+//ARYA (PASS.C)(MAIN.C)
+#include <stdlib.h>
+#include <ctype.h>
+#include "parking.h"
+ 
+#define SECONDS_PER_DAY(24L*60L*60L)
+ 
+/* ----Small private helpers ---- */
+ /* Writes a time_t as "DD-MM-YYYY" into buf (buf must hold at least 11 chars). */
+static void dateText(time_t t, char *buf, int size)
+{
+    struct tm *info = localtime(&t);
+    if (info == NULL) {
+        strncpy(buf, "00-00-0000",size-1);
+        buf[size-1] = '\0';
+        return;
+    }
+    strftime(buf,size, "%d-%m-%Y", info);
+}
+ /* Price of a pass for the given vehicle type. */
+static int passPrice(int type)
+{
+    return (type == TWO_WHEELER) ? PASS_PRICE_TWO : PASS_PRICE_FOUR;
+}
+ /* Name of the vehicle type, for printing. */
+static const char *typeName(int type)
+{
+    return (type == TWO_WHEELER) ? "Two-wheeler" : "Four-wheeler";
+}
+ 
+/* Asks a yes/no question. Returns 1 for yes, 0 for no. */
+static int confirm(const char *prompt)
+{
+    return readInt(prompt,0,1) == 1;
+}
+ 
+/* ----Pass lookup ----*/
+ /* Returns the index in passes[] of the ACTIVE pass for this plate, or -1. */
+int findPass(const char *plate)
+{
+    int i;
+    for (i = 0; i < passCount; i++) {
+        if (passes[i].active && strcmp(passes[i].plate, plate) == 0)
+            return i;
+    }
+    return -1;
+}
+ /* PASS_NONE if there is no active pass, PASS_VALID if not yet expired,
+   PASS_EXPIRED if the expiry date has passed. */
+int passStatus(const char *plate)
+{
+    int idx = findPass(plate);
+    if (idx == -1)
+        return PASS_NONE;
+ 
+    if (time(NULL) > passes[idx].expiryDate)
+        return PASS_EXPIRED;
+    return PASS_VALID;
+}
+ //----Pass operations ---- 
+ Void registerPass(void)
+{
+    char name[NAME_LEN];
+    char plate[PLATE_LEN];
+    char expiryText[11];
+    int  type, price, choice;
+    time_t now;
+    MonthlyPass *p;
+ 
+    printf("\n--- Register Monthly Pass ---\n");
+ 
+    if (passCount >= MAX_PASSES) {
+        printf("Pass list full. No more passes can be registered.\n");
+        return;
+    }
+    readString("Enter owner name: ", name, NAME_LEN);
+    readString("Enter vehicle plate number: ", plate, PLATE_LEN);
+    formatPlate(plate);
+ 
+    if (plate[0] == '\0') {
+        printf("Plate number cannot be empty.\n");
+        return;
+    }
+    if (findPass(plate) != -1) {
+        printf("Vehicle %s already has a pass. Please use Renew instead.\n", plate);
+        return;
+    }
+ 
+    choice = readInt("Vehicle type (1 = two-wheeler, 2 = four-wheeler): ", 1, 2);
+    type = (choice == 1) ? TWO_WHEELER : FOUR_WHEELER;
+    price = passPrice(type);
+ 
+    printf("Pass price for a %s: Rs. %d (valid for %d days)\n",
+           typeName(type), price, PASS_DAYS);
+    if (!confirm("Confirm payment and register? (1 = yes, 0 = no): ")) {
+        printf("Registration cancelled.\n");
+        return;
+    }
+    now = time(NULL);
+    p = &passes[passCount];
+    strncpy(p->plate, plate, PLATE_LEN - 1);
+    p->plate[PLATE_LEN - 1] = '\0';
+    strncpy(p->ownerName, name, NAME_LEN - 1);
+    p->ownerName[NAME_LEN - 1] = '\0';
+    p->type       = type;
+    p->startDate  = now;
+    p->expiryDate = now + (time_t)PASS_DAYS * SECONDS_PER_DAY;
+    p->active     = 1;
+    passCount++;
+ 
+    today.passesSoldToday++;
+    today.passAmount += price;
+ 
+    dateText(p->expiryDate, expiryText, sizeof(expiryText));
+    printf("Pass registered for %s (%s). Rs. %d received.\n", plate, name, price);
+    printf("Pass is valid until %s.\n", expiryText);
+}
+void renewPass(void)
+{
+    char plate[PLATE_LEN];
+    char expiryText[11];
+    int  idx, price;
+    time_t now, base;
+ 
+    printf("\n--- Renew Monthly Pass ---\n");
+    readString("Enter vehicle plate number: ", plate, PLATE_LEN);
+    formatPlate(plate);
+ 
+    idx = findPass(plate);
+    if (idx == -1) {
+        printf("No pass found for %s. Please register first.\n", plate);
+        return;
+    }
+ 
+    price = passPrice(passes[idx].type);
+    dateText(passes[idx].expiryDate, expiryText, sizeof(expiryText));
+    printf("Owner: %s | Current expiry: %s (%s)\n",
+           passes[idx].ownerName, expiryText,
+           passStatus(plate) == PASS_VALID ? "VALID" : "EXPIRED");
+    printf("Renewal price: Rs. %d for %d more days\n", price, PASS_DAYS);
+ 
+    if (!confirm("Confirm payment and renew? (1 = yes, 0 = no): ")) {
+        printf("Renewal cancelled.\n");
+        return;
+    }
+ 
+    /* New expiry = later of (now, old expiry) + 30 days */
+    now  = time(NULL);
+    base = (passes[idx].expiryDate > now) ? passes[idx].expiryDate : now;
+    passes[idx].expiryDate = base + (time_t)PASS_DAYS * SECONDS_PER_DAY;
+ 
+    today.passAmount += price;
+ 
+     dateText(passes[idx].expiryDate, expiryText, sizeof(expiryText));
+    printf("Pass renewed. Rs. %d received. New expiry: %s.\n", price, expiryText);
+}
+ 
+void cancelPass(void)
+{
+    char plate[PLATE_LEN];
+    int  idx;
+ 
+    printf("\n--- Cancel Monthly Pass ---\n");
+    readString("Enter vehicle plate number: ", plate, PLATE_LEN);
+    formatPlate(plate);
+ 
+    idx = findPass(plate);
+    if (idx == -1) {
+        printf("No active pass found for %s.\n", plate);
+        return;
+    }
+ 
+    printf("Pass owner: %s. Cancelling gives NO refund.\n", passes[idx].ownerName);
+    if (!confirm("Really cancel this pass? (1 = yes, 0 = no): ")) {
+        printf("Cancellation aborted.\n");
+        return;
+    }
+ 
+    passes[idx].active = 0;
+    printf("Pass for %s has been cancelled.\n", plate);
+}
+ void listPasses(void)
+{
+    int i, shown = 0;
+    char expiryText[11];
+ 
+    printf("\n--- Active Monthly Passes ---\n");
+    printf("%-20s %-12s %-14s %-11s %s\n",
+           "Owner", "Plate", "Type", "Expiry", "Status");
+    printf("-------------------------------------------------------------------\n");
+ 
+    for (i = 0; i < passCount; i++) {
+        if (!passes[i].active)
+            continue;
+ 
+        dateText(passes[i].expiryDate, expiryText, sizeof(expiryText));
+        printf("%-20s %-12s %-14s %-11s %s\n",
+               passes[i].ownerName,
+               passes[i].plate,
+               typeName(passes[i].type),
+               expiryText,
+               passStatus(passes[i].plate) == PASS_VALID ? "VALID" : "EXPIRED");
+        shown++;
+    }
+ 
+    if (shown == 0)
+        printf("No active passes.\n");
+    else
+        printf("Total active passes: %d\n", shown);
+}
+ 
+/* ----Admin ---- */
+ 
+/* Returns 1 if the correct password is entered within 3 attempts, else 0. */
+int adminLogin(void)
+{
+    char entered[50];
+    int  attempt;
+ 
+    for (attempt = 1; attempt <= 3; attempt++) {
+        readString("Enter admin password: ", entered, sizeof(entered));
+        if (strcmp(entered, ADMIN_PASSWORD) == 0) {
+            printf("Login successful.\n");
+            return 1;
+        }
+        printf("Wrong password (%d of 3 attempts used).\n", attempt);
+    }
+ 
+    printf("Too many wrong attempts. Access denied.\n");
+    return 0;
+}
+ 
+void adminMenu(void)
+{
+    int choice;
+ 
+    do {
+        printf("\n===== ADMIN MENU =====\n");
+        printf("1. Daily report\n");
+        printf("2. Register pass\n");
+        printf("3. Renew pass\n");
+        printf("4. Cancel pass\n");
+        printf("5. List passes\n");
+        printf("0. Back to main menu\n");
+ 
+        choice = readInt("Enter your choice: ", 0, 5);
+ 
+        switch (choice) {
+            case 1:
+                showDailyReport();
+                break;
+            case 2:
+                registerPass();
+                saveData();
+                break;
+            case 3:
+                renewPass();
+                saveData();
+                break;
+            case 4:
+                cancelPass();
+                saveData();
+                break;
+            case 5:
+                listPasses();
+                break;
+            case 0:
+                break;
+        }
+    } while (choice != 0);
+}
+
