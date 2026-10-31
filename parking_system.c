@@ -217,7 +217,7 @@ void adminMenu(void); /* report, pass options */
 
 #endif
 
-//ARYA (PASS.C)(MAIN.C)
+//(PASSES.C)(MAIN.C)
 #include <stdlib.h>
 #include <ctype.h>
 #include "parking.h"
@@ -489,3 +489,70 @@ void adminMenu(void)
     } while (choice != 0);
 }
 
+
+#include "parking.h"
+ 
+/* --- Shared data (declared extern in parking.h) --- */
+Slot        lot[TOTAL_SLOTS];
+MonthlyPass passes[MAX_PASSES];
+int         passCount = 0;
+DailyRecord today;
+time_t      entry_time;   /* declared extern in Person 1's header */
+ 
+int main(void)
+{
+    int choice;
+ 
+    /* Start-up: set up slots, load saved data, check the date */
+    initSlots();
+    loadData();              /* a missing file on the first run is fine */
+    resetDailyIfNewDay();
+ 
+    printf("=====================================\n");
+    printf("   CAMPUS PARKING MANAGEMENT SYSTEM\n");
+    printf("=====================================\n");
+ 
+    do {
+        /* Also handles the program running past midnight */
+        resetDailyIfNewDay();
+ 
+        printf("\n========== MAIN MENU ==========\n");
+        printf("1. Vehicle entry\n");
+        printf("2. Vehicle exit\n");
+        printf("3. Search vehicle\n");
+        printf("4. View slots\n");
+        printf("5. Admin\n");
+        printf("0. Quit\n");
+ 
+        choice = readInt("Enter your choice: ", 0, 5);
+ 
+        switch (choice) {
+            case 1:
+                vehicleEntry();
+                saveData();
+                break;
+            case 2:
+                vehicleExit();
+                saveData();
+                break;
+            case 3:
+                searchVehicle();
+                break;
+            case 4:
+                viewSlots();
+                break;
+            case 5:
+                if (adminLogin()) {
+                    adminMenu();
+                    saveData();
+                }
+                break;
+            case 0:
+                saveData();
+                printf("\nData saved. Thank you for using the Campus Parking System. Goodbye!\n");
+                break;
+        }
+    } while (choice != 0);
+ 
+    return 0;
+}
