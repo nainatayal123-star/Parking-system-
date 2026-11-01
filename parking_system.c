@@ -832,7 +832,7 @@ void adminMenu(void)
         printf("5.List of monthly passes\n");
         printf("6.Back to Main Menu\n");
 
-        choice=readInt("Enter your choice:",1,6);
+        choice=readInt("Enter your choice:",0,5);
         switch (choice)
         {
             case 1:
@@ -858,11 +858,11 @@ void adminMenu(void)
                 listPasses();
                 break;
 
-            case 6:
+            case 0:
                 printf("back to the main menu\n");
                 break;
         }
-    } while (choice!=6);
+    } while (choice!=0);
 }
 
 int main(void)
@@ -887,7 +887,7 @@ int main(void)
         printf("5. Admin\n");
         printf("6. Quit\n");
 
-        choice = readInt("Enter your choice:",1,6);
+        choice = readInt("Enter your choice:",0,5);
         switch (choice)
         {
             case 1:
@@ -916,13 +916,13 @@ int main(void)
                 }
                 break;
 
-            case 6:
+            case 0:
                 saveData();
                 printf("Data is saved successfully\n");
                 printf("Thank you !!\n");
                 break;
         }
-    } while (choice!=6);
+    } while (choice!=0);
     return 0;
 }
 
