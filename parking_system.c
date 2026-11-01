@@ -611,16 +611,15 @@ void registerPass(void)      /*for a new month pass (registration)*/
 
     readString("Enter owner's name: ", name, NAME_LEN);
     readString("Enter vehicle number: ", plate, PLATE_LEN);
-
     formatPlate(plate);
 
-    if (strlen(plate) == 0)
+    if (strlen(plate)==0)
     {
         printf("Vehicle number cannot be empty \n");
         return;
     }
     index = findPass(plate);
-    if (index != -1)
+    if (index!=-1)
     {
         printf("This vehicle already has a pass\n");
         printf("Please... renew the existing pass\n");
@@ -643,8 +642,8 @@ void registerPass(void)      /*for a new month pass (registration)*/
        price = PASS_PRICE_FOUR;
     }
 
-    printf("\Pass price: Rs. %d\n", price);
-    printf("Pass validity: %d days\n", PASS_DAYS);
+    printf("pass price: Rs. %d\n", price);
+    printf("pass validity: %d days\n", PASS_DAYS);
 
     confirm = readInt("Confirm payment? (1=Yes,0=No):",0,1);
     if (confirm == 0)
@@ -800,7 +799,8 @@ void listPasses(void)             /*displaying of all active montly pass*/
 }
 int adminLogin(void)
 {
-    char password[50],attempts;
+    char password[50];
+    int attempts;
     printf("********ADMIN LOGIN*********\n");
     for(attempts=1;attempts<=3;attempts++)
     {
@@ -813,7 +813,7 @@ int adminLogin(void)
         }
         else
         {
-            printf("incorrect password.\n");
+            printf("incorrect password\n");
         }
     }
     printf("three incorrect attempts....denied\n");
@@ -833,7 +833,7 @@ void adminMenu(void)
         printf("5.List of monthly passes\n");
         printf("6.Back to Main Menu\n");
 
-        choice=readInt("Enter your choice:",0,5);
+        choice=readInt("Enter your choice:",1,6);
         switch (choice)
         {
             case 1:
@@ -863,14 +863,9 @@ void adminMenu(void)
                 printf("back to the main menu\n");
                 break;
         }
-    } while (choice!=0);
+    } while (choice!=6);
 }
-#include "parking.h"
 
-Slot lot[TOTAL_SLOTS];
-MonthlyPass passes[MAX_PASSES];
-int passCount=0;
-DailyRecord today;
 int main(void)
 {
     int choice;
@@ -880,21 +875,20 @@ int main(void)
     resetDailyIfNewDay();
 
     printf("\n====================================\n");
-    printf("   CAMPUS PARKING MANAGEMENT SYSTEM\n");
+    printf(" CAMPUS PARKING MANAGEMENT SYSTEM\n");
     printf("====================================\n");
-
     do
     {
         resetDailyIfNewDay();
-
-        printf("\n---------MAIN MENU---------\n");
-        printf("1. Vehicle entry\n");
-        printf("2. Vehicle exit\n");
-        printf("3. Search vehicle\n");
-        printf("4. View parking slots\n");
+        printf("-------- MAIN MENU ---------\n");
+        printf("1. Vehicle Entry\n");
+        printf("2. Vehicle Exit\n");
+        printf("3. Search Vehicle\n");
+        printf("4. View Parking Slots\n");
         printf("5. Admin\n");
         printf("6. Quit\n");
-        choice = readInt("Enter your choice:",0,5);
+
+        choice = readInt("Enter your choice:",1,6);
         switch (choice)
         {
             case 1:
@@ -916,7 +910,7 @@ int main(void)
                 break;
 
             case 5:
-                if (adminLogin() == 1)
+                if (adminLogin()==1)
                 {
                     adminMenu();
                     saveData();
@@ -925,10 +919,11 @@ int main(void)
 
             case 6:
                 saveData();
-                printf("data is saved successfully\n");
-                printf("Thank you for using the system!!\n");
+                printf("Data is saved successfully\n");
+                printf("Thank you !!\n");
                 break;
         }
-    } while (choice != 0);
+    } while (choice!=6);
     return 0;
 }
+
