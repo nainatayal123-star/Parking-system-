@@ -1,4 +1,4 @@
-v/*
+/*
  * parking.h - Campus Parking Management System
  * Shared header file. All three members include this file.
  * Do NOT change anything here without telling the whole group.
@@ -50,7 +50,7 @@ v/*
 #define PLATE_LEN 15
 #define NAME_LEN 30
 #define MAX_PASSES 500
-#define ADMIN_PASSWORD "Parking321@" /* fixed in code; choose your own */
+#define ADMIN_PASSWORD "Parking321@"
 
 #define SLOT_FILE "slots.txt"
 #define PASS_FILE "passes.txt"
@@ -70,10 +70,10 @@ v/*
 /* ---------------- Structures ---------------- */
 typedef struct
 {
-    char plate[PLATE_LEN]; /* capital letters, no spaces */
-    int type;              /* TWO_WHEELER or FOUR_WHEELER */
-    time_t entryTime;      /* real time of entry */
-    int isPassHolder;      /* 1 if a valid pass was found at entry */
+    char plate[PLATE_LEN];
+    int type;
+    time_t entryTime;
+    int isPassHolder;
 } Vehicle;
 
 typedef struct
@@ -103,16 +103,28 @@ typedef struct
     int passAmount; /* rupees collected from pass sales today */
 } DailyRecord;
 
-/* ---------------- Shared data (defined in main.c by Person 3) ---------------- */
-extern Slot lot[TOTAL_SLOTS];
-extern MonthlyPass passes[MAX_PASSES];
-extern int passCount;
-extern DailyRecord today;
-extern time_t entry_time;
+Slot lot[TOTAL_SLOTS];
+MonthlyPass passes[MAX_PASSES];
+int passCount = 0;
+DailyRecord today = {0};
+time_t entry_time = 0;
 
-/* =====================================================
- *  PERSON 1 : core logic and real time   (entry_exit.c)
- * ===================================================== */
+int passStatus(const char *plate);
+int findPass(const char *plate);
+
+#endif
+
+void initSlots(void);                          /* sets slotNo, category, isOccupied = 0 */
+int  findParkedVehicle(const char *plate);     /* returns array index of the slot, or -1 */
+void formatPlate(char *plate);                 /* capital letters, remove spaces */
+int  readInt(const char *prompt, int min, int max);
+void readString(const char *prompt, char *dest, int size);
+void viewSlots(void);                          /* all / free / reserved */
+int  loadData(void);                           /* read slots, passes, daily record.
+                                                  Must restore entryTime and isPassHolder. */
+int  saveData(void);                           /* write all of them back */
+void resetDailyIfNewDay(void);                 /* if date changed, start a new daily record */
+
 
 int findFreeSlot(int type, int isPassHolder)
 {
@@ -161,13 +173,15 @@ int findFreeSlot(int type, int isPassHolder)
 
 int minutesParked(time_t entry, time_t exitTime)
 {
-    if (exitTime <= entry) return 0;
+    if (exitTime <= entry)
+        return 0;
     return (int)((exitTime - entry) / 60);
 }
 
 int calcFee(int type, int minutes)
 {
-    if (minutes <= 0) return 0;
+    if (minutes <= 0)
+        return 0;
 
     int halfRate = (type == TWO_WHEELER) ? RATE_TWO_HALF_HOUR : RATE_FOUR_HALF_HOUR;
     int hourRate = (type == TWO_WHEELER) ? RATE_TWO_PER_HOUR : RATE_FOUR_PER_HOUR;
@@ -175,7 +189,7 @@ int calcFee(int type, int minutes)
     if (minutes <= 30)
         return halfRate;
 
-    int hours = (minutes + 59) / 60; /* Round up to next full hour */
+    int hours = (minutes + 59) / 60;
     return hours * hourRate;
 }
 
@@ -316,30 +330,28 @@ void showDailyReport(void)
     printf("Total revenue today    : Rs. %d\n", today.hourlyAmount + today.passAmount);
 }
 
-
-  void initSlots(void)
+void initSlots(void)
 {
-     for(int i=0;i<TOTAL_SLOTS;i++)
-     {
-       lot.slotNo[i]+=1;
-       if(lot.slotNo<150)
-       strcpy (lot.category[i],"TWO WHEELER");
-       else if(lot.slotNo[i]>150 && lot.slotNo[i]<250)
-      strcpy (lot.category[i]," FOUR WHEELER");
-       else
-       strcpy(lot.category[i],"RESERVED");
+    for (int i = 0; i < TOTAL_SLOTS; i++)
+    {
+        lot[i].slotNo = i + 1;
+        if (i < 150)
+            lot[i].category = SLOT_NORMAL_TWO;
+        else if (i < 250)
+            lot[i].category = SLOT_NORMAL_FOUR;
+        else
+            lot[i].category = SLOT_RESERVED;
 
-       lot.isOccupied=0;
-       lot.isplate[0]='\0';
-        
-     }
-
+        lot[i].isOccupied = 0;
+        memset(&lot[i].vehicle, 0, sizeof(Vehicle));
+    }
 }
+
 int findParkedVehicle(const char *plate)
-    { 
-      for(int i=0;i<TOTAL_SLOTS;i++)
-      {
-        if(lot.isOccupied && strcmp(lot[i].vehicle.plate , plate )==0)
+{
+    for (int i = 0; i < TOTAL_SLOTS; i++)
+    {
+        if (lot[i].isOccupied && strcmp(lot[i].vehicle.plate, plate) == 0)
         {
             return i;
         }
@@ -349,172 +361,169 @@ int findParkedVehicle(const char *plate)
 
 void formatPlate(char *plate)
 {
-    if(plate==NULL)
-    return ;
+    if (plate == NULL)
+        return;
 
-    int read_index=0;
-    int write_index=0;
+    int read_index = 0;
+    int write_index = 0;
 
-    while (plate[read_index]!=\0)
+    while (plate[read_index] != '\0')
     {
-        unsigned char c = plate[read_index];
-        if(!isspace(c))
-        plate[write_index++]= (char)toupper(c);
-    read_index++;
-    } 
-    plate[write_index]=\0;
+        unsigned char c = (unsigned char)plate[read_index];
+        if (!isspace(c))
+            plate[write_index++] = (char)toupper(c);
+        read_index++;
+    }
+    plate[write_index] = '\0';
+    return;
 }
-            
-int readInt(const char *prompt, int min, int max)
-{ 
-    int value;
 
-    while(1)
+int readInt(const char *prompt, int min, int max)
+{
+    int value = 0;
+
+    while (1)
     {
-        printf("%s",prompt);
-        if(scanf("%d",&value)==1)
+        printf("%s", prompt);
+        if (scanf("%d", &value) == 1)
         {
-            if( value>=min && value<= max)
+            if (value >= min && value <= max)
             {
-                while(getchar() !='\n');
+                int ch;
+                while ((ch = getchar()) != '\n' && ch != EOF)
+                    ;
                 return value;
             }
         }
-        else{
+        else
+        {
             int ch;
-            while((ch=getchar())!='\n' && ch !=EOF);
+            while ((ch = getchar()) != '\n' && ch != EOF)
+                ;
         }
-        printf("Invalid Input. Please enter a number between %d and %d .\n",min,max);
-        }
+
+        printf("Invalid Input. Please enter a number between %d and %d.\n", min, max);
+        while (getchar() != '\n')
+            ;
     }
-
-
-
+}
 
 void readString(const char *prompt, char *dest, int size)
 {
-    while(1)
+    if (dest == NULL || size <= 0)
+        return;
+
+    while (1)
     {
-        printf("%s",prompt);
-        if(fgets(dest,size,stdin)!=NULL)
+        printf("%s", prompt);
+        if (fgets(dest, size, stdin) != NULL)
         {
-            int i=0;
-            while(dest[i]!=='\0')
-            {
-                if(dest[i]!=='\n')
-                dest[i]==0;
-                break;
-            }
-            i++;
+            dest[strcspn(dest, "\n")] = '\0';
+            if (dest[0] != '\0')
+                return;
         }
-        if(dest[0]!='\0')
-        break;
+        printf("Input cannot be empty. Please try again.\n");
     }
-    printf("Input cannot be empty. Please try again.\n");
 }
-void viewSlots(void)   
-    {
-        #include <stdio.h>
 
 void viewSlots(void)
 {
     int freeTwo = 0, freeFour = 0, freeReserved = 0;
 
-    for (int i = 0; i < TOTAL_SLOTS; i++) {
-        if (!lot[i].isOccupied) {
-            if (lot[i].category == SLOT_NORMAL_TWO) freeTwo++;
-            else if (lot[i].category == SLOT_NORMAL_FOUR) freeFour++;
-            else if (lot[i].category == SLOT_RESERVED) freeReserved++;
+    for (int i = 0; i < TOTAL_SLOTS; i++)
+    {
+        if (!lot[i].isOccupied)
+        {
+            if (lot[i].category == SLOT_NORMAL_TWO)
+                freeTwo++;
+            else if (lot[i].category == SLOT_NORMAL_FOUR)
+                freeFour++;
+            else if (lot[i].category == SLOT_RESERVED)
+                freeReserved++;
         }
     }
+
     printf("\n--- SLOT SUMMARY ---\n");
     printf("Free Two-Wheeler Slots  : %d / %d\n", freeTwo, NORMAL_TWO_SLOTS);
     printf("Free Four-Wheeler Slots : %d / %d\n", freeFour, NORMAL_FOUR_SLOTS);
     printf("Free Reserved Slots     : %d / %d\n", freeReserved, RESERVED_SLOTS);
     printf("---------------------\n");
 
-    // 3. Ask user choice using readInt helper
     printf("\nView Options:\n");
     printf("1. View All Slots\n");
     printf("2. View Free Slots Only\n");
     printf("3. View Reserved Slots Only\n");
+
     int choice = readInt("Enter choice (1-3): ", 1, 3);
 
-    
     printf("\nSlot No\tCategory\t\tStatus\t\tPlate\n");
     printf("----------------------------------------------------------\n");
 
-    for (int i = 0; i < TOTAL_SLOTS; i++) {
+    for (int i = 0; i < TOTAL_SLOTS; i++)
+    {
         int show = 0;
 
-        if (choice == 1) {
-            show = 1; 
-        } else if (choice == 2 && !lot[i].isOccupied) {
-            show = 1; 
-        } else if (choice == 3 && lot[i].category == SLOT_RESERVED) {
-            show = 1; 
-        }
+        if (choice == 1)
+            show = 1;
+        else if (choice == 2 && !lot[i].isOccupied)
+            show = 1;
+        else if (choice == 3 && lot[i].category == SLOT_RESERVED)
+            show = 1;
 
         if (show)
-         {
+        {
             const char *catStr = "Normal 2W";
-            if (lot[i].category == SLOT_NORMAL_FOUR) catStr = "Normal 4W";
-            else if (lot[i].category == SLOT_RESERVED) catStr = "Reserved ";
+            if (lot[i].category == SLOT_NORMAL_FOUR)
+                catStr = "Normal 4W";
+            else if (lot[i].category == SLOT_RESERVED)
+                catStr = "Reserved";
 
-            if (lot[i].isOccupied) {
+            if (lot[i].isOccupied)
                 printf("%-7d\t%-15s\tOccupied\t%s\n", lot[i].slotNo, catStr, lot[i].vehicle.plate);
-            } else {
+            else
                 printf("%-7d\t%-15s\tFree\t\t-\n", lot[i].slotNo, catStr);
-            }
         }
     }
 }
 
-    }
-
-    int loadData()
-     {
-
+int loadData(void)
+{
     FILE *fp = fopen("parking_data.txt", "r");
-    
-
-    if (fp == NULL) {
+    if (fp == NULL)
         return 0;
+
+    for (int i = 0; i < TOTAL_SLOTS; i++)
+    {
+        if (fscanf(fp, "%d %d %d %14s",
+                   &lot[i].slotNo,
+                   &lot[i].category,
+                   &lot[i].isOccupied,
+                   lot[i].vehicle.plate) != 4)
+        {
+            fclose(fp);
+            return 0;
+        }
     }
-    
-    int i;
-    for (i = 0; i < TOTAL_SLOTS; i++) {
-        
-        fscanf(fp, "%d %d %d %s", &lot[i].slotNo, 
-                                 (int*)&lot[i].category, 
-                                 &lot[i].isOccupied, 
-                                 lot[i].vehicle.plate);
-    }
-    
+
     fclose(fp);
     return 1;
 }
-                                  
 
-    int saveData()
-     {
+int saveData(void)
+{
     FILE *fp = fopen("parking_data.txt", "w");
-    
-    
-    if (fp == NULL) {
-        return 0; 
-    }
-    
-    int i;
-    for (i = 0; i < TOTAL_SLOTS; i++)
-     {
+    if (fp == NULL)
+        return 0;
 
-        fprintf(fp, "%d %d %d %s\n", lot[i].slotNo, 
-                                     lot[i].category, 
-                                     lot[i].isOccupied, 
-                                     lot[i].vehicle.plate);
+    for (int i = 0; i < TOTAL_SLOTS; i++)
+    {
+        fprintf(fp, "%d %d %d %s\n",
+                lot[i].slotNo,
+                lot[i].category,
+                lot[i].isOccupied,
+                lot[i].vehicle.plate);
     }
-    
+
     fclose(fp);
     return 1;
 }
@@ -557,7 +566,6 @@ int adminLogin(void); /* 1 if password correct, else 0 */
 void adminMenu(void); /* report, pass options */
 /* main() is also written by Person 3 */
 
-#endif
 
 //****************(passes.c)*******************
 
@@ -610,15 +618,16 @@ void registerPass(void)      /*for a new month pass (registration)*/
 
     readString("Enter owner's name: ", name, NAME_LEN);
     readString("Enter vehicle number: ", plate, PLATE_LEN);
+
     formatPlate(plate);
 
-    if (strlen(plate)==0)
+    if (strlen(plate) == 0)
     {
         printf("Vehicle number cannot be empty \n");
         return;
     }
     index = findPass(plate);
-    if (index!=-1)
+    if (index != -1)
     {
         printf("This vehicle already has a pass\n");
         printf("Please... renew the existing pass\n");
@@ -632,17 +641,17 @@ void registerPass(void)      /*for a new month pass (registration)*/
     typeChoice = readInt("Enter your choice of vehicle:",1,2);
     if (typeChoice == 1)
     {
-       type=TWO_WHEELER;
-       price=PASS_PRICE_TWO;
+       type = TWO_WHEELER;
+       price = PASS_PRICE_TWO;
     }
     else
     {
-       type=FOUR_WHEELER;
-       price=PASS_PRICE_FOUR;
+       type = FOUR_WHEELER;
+       price = PASS_PRICE_FOUR;
     }
 
-    printf("pass price: Rs. %d\n", price);
-    printf("pass validity: %d days\n", PASS_DAYS);
+    printf("Pass price: Rs. %d\n", price);
+    printf("Pass validity: %d days\n", PASS_DAYS);
 
     confirm = readInt("Confirm payment? (1=Yes,0=No):",0,1);
     if (confirm == 0)
@@ -659,14 +668,14 @@ void registerPass(void)      /*for a new month pass (registration)*/
     passes[passCount].startDate=currentTime;
     passes[passCount].expiryDate =currentTime+PASS_DAYS*24*60*60;
 
-    passes[passCount].active=1;
+    passes[passCount].active = 1;
     passCount++;
 
     today.passesSoldToday++;
-    today.passAmount=today.passAmount+price;
+    today.passAmount = today.passAmount + price;
     printf("Pass registered successfully!!\n");
     printf("Vehicle Number: %s\n",plate);
-    printf("Expiry Date: %s",ctime(&passes[passCount-1].expiryDate));
+    printf("Expiry Date: %s",ctime(&passes[passCount - 1].expiryDate));
 }
 void renewPass(void)                   /*renew of the existing pass*/
 {
@@ -686,7 +695,7 @@ void renewPass(void)                   /*renew of the existing pass*/
     }
     index=findPass(plate);
 
-    if (index==-1)
+    if (index == -1)
     {
         printf("Pass not found....Please register yourself first\n");
         return;
@@ -697,7 +706,7 @@ void renewPass(void)                   /*renew of the existing pass*/
     }
     else
     {
-        price=PASS_PRICE_FOUR;
+        price = PASS_PRICE_FOUR;
     }
     currentTime=time(NULL);
     if (passes[index].expiryDate>currentTime)
@@ -798,8 +807,7 @@ void listPasses(void)             /*displaying of all active montly pass*/
 }
 int adminLogin(void)
 {
-    char password[50];
-    int attempts;
+    char password[50],attempts;
     printf("********ADMIN LOGIN*********\n");
     for(attempts=1;attempts<=3;attempts++)
     {
@@ -812,7 +820,7 @@ int adminLogin(void)
         }
         else
         {
-            printf("incorrect password\n");
+            printf("incorrect password.\n");
         }
     }
     printf("three incorrect attempts....denied\n");
@@ -832,7 +840,9 @@ void adminMenu(void)
         printf("5.List of monthly passes\n");
         printf("0.Back to Main Menu\n");
 
-        choice=readInt("Enter your choice:",0,5);
+
+        scanf("%d",&choice);
+
         switch (choice)
         {
             case 1:
@@ -858,7 +868,7 @@ void adminMenu(void)
                 listPasses();
                 break;
 
-            case 0:
+            case 6:
                 printf("back to the main menu\n");
                 break;
         }
@@ -874,16 +884,18 @@ int main(void)
     resetDailyIfNewDay();
 
     printf("\n====================================\n");
-    printf(" CAMPUS PARKING MANAGEMENT SYSTEM\n");
+    printf("   CAMPUS PARKING MANAGEMENT SYSTEM\n");
     printf("====================================\n");
+
     do
     {
         resetDailyIfNewDay();
-        printf("-------- MAIN MENU ---------\n");
-        printf("1. Vehicle Entry\n");
-        printf("2. Vehicle Exit\n");
-        printf("3. Search Vehicle\n");
-        printf("4. View Parking Slots\n");
+
+        printf("\n---------MAIN MENU---------\n");
+        printf("1. Vehicle entry\n");
+        printf("2. Vehicle exit\n");
+        printf("3. Search vehicle\n");
+        printf("4. View parking slots\n");
         printf("5. Admin\n");
         printf("0. Quit\n");
 
@@ -909,7 +921,7 @@ int main(void)
                 break;
 
             case 5:
-                if (adminLogin()==1)
+                if (adminLogin() == 1)
                 {
                     adminMenu();
                     saveData();
@@ -918,11 +930,9 @@ int main(void)
 
             case 0:
                 saveData();
-                printf("Data is saved successfully\n");
-                printf("Thank you !!\n");
+                printf("data is saved successfully\n");
+                printf("Thank you for using the system!!\n");
                 break;
         }
-    } while (choice!=0);
-    return 0;
+    } while (choice != 0);
 }
-
