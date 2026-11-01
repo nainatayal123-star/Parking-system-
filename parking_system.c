@@ -885,7 +885,7 @@ int main(void)
         printf("3. Search Vehicle\n");
         printf("4. View Parking Slots\n");
         printf("5. Admin\n");
-        printf("6. Quit\n");
+        printf("0. Quit\n");
 
         choice = readInt("Enter your choice:",0,5);
         switch (choice)
