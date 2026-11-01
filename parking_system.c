@@ -830,7 +830,7 @@ void adminMenu(void)
         printf("3.Renew monthly pass\n");
         printf("4.Cancel monthly pass\n");
         printf("5.List of monthly passes\n");
-        printf("6.Back to Main Menu\n");
+        printf("0.Back to Main Menu\n");
 
         choice=readInt("Enter your choice:",0,5);
         switch (choice)
