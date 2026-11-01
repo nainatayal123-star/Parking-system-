@@ -840,11 +840,9 @@ void adminMenu(void)
         printf("5.List of monthly passes\n");
         printf("6.Back to Main Menu\n");
 
-<<<<<<< HEAD
+
         scanf("%d",&choice);
-=======
-        choice=readInt("Enter your choice:",0,5);
->>>>>>> 8f966da69bbbc8b97e186d9f84e23f6f1a56089e
+
         switch (choice)
         {
             case 1:
@@ -870,7 +868,7 @@ void adminMenu(void)
                 listPasses();
                 break;
 
-            case 0:
+            case 6:
                 printf("back to the main menu\n");
                 break;
         }
@@ -900,10 +898,7 @@ int main(void)
         printf("4. View parking slots\n");
         printf("5. Admin\n");
         printf("6. Quit\n");
-<<<<<<< HEAD
-=======
 
->>>>>>> 8f966da69bbbc8b97e186d9f84e23f6f1a56089e
         choice = readInt("Enter your choice:",0,5);
         switch (choice)
         {
@@ -939,10 +934,5 @@ int main(void)
                 printf("Thank you for using the system!!\n");
                 break;
         }
-<<<<<<< HEAD
     } while (choice != 0);
-=======
-    } while (choice!=0);
->>>>>>> 8f966da69bbbc8b97e186d9f84e23f6f1a56089e
-    return 0;
 }
