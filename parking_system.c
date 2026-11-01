@@ -1,4 +1,4 @@
-/*
+v/*
  * parking.h - Campus Parking Management System
  * Shared header file. All three members include this file.
  * Do NOT change anything here without telling the whole group.
@@ -188,19 +188,234 @@ void vehicleExit(void)
 void searchVehicle(void);
 void showDailyReport(void); /* vehicles, hourly amount, pass amount, total */
 
-/* =====================================================
- *  PERSON 2 : foundation, helpers and storage   (slots.c, files.c)
- * ===================================================== */
-void initSlots(void);                     /* sets slotNo, category, isOccupied = 0 */
-int findParkedVehicle(const char *plate); /* returns array index of the slot, or -1 */
-void formatPlate(char *plate);            /* capital letters, remove spaces */
-int readInt(const char *prompt, int min, int max);
-void readString(const char *prompt, char *dest, int size);
-void viewSlots(void);          /* all / free / reserved */
-int loadData(void);            /* read slots, passes, daily record.
-                                  Must restore entryTime and isPassHolder. */
-int saveData(void);            /* write all of them back */
-void resetDailyIfNewDay(void); /* if date changed, start a new daily record */
+
+  void initSlots(void)
+{
+     for(int i=0;i<TOTAL_SLOTS;i++)
+     {
+       lot.slotNo[i]+=1;
+       if(lot.slotNo<150)
+       strcpy (lot.category[i],"TWO WHEELER");
+       else if(lot.slotNo[i]>150 && lot.slotNo[i]<250)
+      strcpy (lot.category[i]," FOUR WHEELER");
+       else
+       strcpy(lot.category[i],"RESERVED");
+
+       lot.isOccupied=0;
+       lot.isplate[0]='\0';
+        
+     }
+
+}
+int findParkedVehicle(const char *plate)
+    { 
+      for(int i=0;i<TOTAL_SLOTS;i++)
+      {
+        if(lot.isOccupied && strcmp(lot[i].vehicle.plate , plate )==0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void formatPlate(char *plate)
+{
+    if(plate==NULL)
+    return ;
+
+    int read_index=0;
+    int write_index=0;
+
+    while (plate[read_index]!=\0)
+    {
+        unsigned char c = plate[read_index];
+        if(!isspace(c))
+        plate[write_index++]= (char)toupper(c);
+    read_index++;
+    } 
+    plate[write_index]=\0;
+}
+            
+int readInt(const char *prompt, int min, int max)
+{ 
+    int value;
+
+    while(1)
+    {
+        printf("%s",prompt);
+        if(scanf("%d",&value)==1)
+        {
+            if( value>=min && value<= max)
+            {
+                while(getchar() !='\n');
+                return value;
+            }
+        }
+        else{
+            int ch;
+            while((ch=getchar())!='\n' && ch !=EOF);
+        }
+        printf("Invalid Input. Please enter a number between %d and %d .\n",min,max);
+        }
+    }
+
+
+
+
+void readString(const char *prompt, char *dest, int size)
+{
+    while(1)
+    {
+        printf("%s",prompt);
+        if(fgets(dest,size,stdin)!=NULL)
+        {
+            int i=0;
+            while(dest[i]!=='\0')
+            {
+                if(dest[i]!=='\n')
+                dest[i]==0;
+                break;
+            }
+            i++;
+        }
+        if(dest[0]!='\0')
+        break;
+    }
+    printf("Input cannot be empty. Please try again.\n");
+}
+void viewSlots(void)   
+    {
+        #include <stdio.h>
+#include "parking.h"
+
+void viewSlots(void)
+{
+    int freeTwo = 0, freeFour = 0, freeReserved = 0;
+
+    for (int i = 0; i < TOTAL_SLOTS; i++) {
+        if (!lot[i].isOccupied) {
+            if (lot[i].category == SLOT_NORMAL_TWO) freeTwo++;
+            else if (lot[i].category == SLOT_NORMAL_FOUR) freeFour++;
+            else if (lot[i].category == SLOT_RESERVED) freeReserved++;
+        }
+    }
+    printf("\n--- SLOT SUMMARY ---\n");
+    printf("Free Two-Wheeler Slots  : %d / %d\n", freeTwo, NORMAL_TWO_SLOTS);
+    printf("Free Four-Wheeler Slots : %d / %d\n", freeFour, NORMAL_FOUR_SLOTS);
+    printf("Free Reserved Slots     : %d / %d\n", freeReserved, RESERVED_SLOTS);
+    printf("---------------------\n");
+
+    // 3. Ask user choice using readInt helper
+    printf("\nView Options:\n");
+    printf("1. View All Slots\n");
+    printf("2. View Free Slots Only\n");
+    printf("3. View Reserved Slots Only\n");
+    int choice = readInt("Enter choice (1-3): ", 1, 3);
+
+    
+    printf("\nSlot No\tCategory\t\tStatus\t\tPlate\n");
+    printf("----------------------------------------------------------\n");
+
+    for (int i = 0; i < TOTAL_SLOTS; i++) {
+        int show = 0;
+
+        if (choice == 1) {
+            show = 1; 
+        } else if (choice == 2 && !lot[i].isOccupied) {
+            show = 1; 
+        } else if (choice == 3 && lot[i].category == SLOT_RESERVED) {
+            show = 1; 
+        }
+
+        if (show)
+         {
+            const char *catStr = "Normal 2W";
+            if (lot[i].category == SLOT_NORMAL_FOUR) catStr = "Normal 4W";
+            else if (lot[i].category == SLOT_RESERVED) catStr = "Reserved ";
+
+            if (lot[i].isOccupied) {
+                printf("%-7d\t%-15s\tOccupied\t%s\n", lot[i].slotNo, catStr, lot[i].vehicle.plate);
+            } else {
+                printf("%-7d\t%-15s\tFree\t\t-\n", lot[i].slotNo, catStr);
+            }
+        }
+    }
+}
+
+    }
+
+    int loadData()
+     {
+
+    FILE *fp = fopen("parking_data.txt", "r");
+    
+
+    if (fp == NULL) {
+        return 0;
+    }
+    
+    int i;
+    for (i = 0; i < TOTAL_SLOTS; i++) {
+        
+        fscanf(fp, "%d %d %d %s", &lot[i].slotNo, 
+                                 (int*)&lot[i].category, 
+                                 &lot[i].isOccupied, 
+                                 lot[i].vehicle.plate);
+    }
+    
+    fclose(fp);
+    return 1;
+}
+                                  
+
+    int saveData()
+     {
+    FILE *fp = fopen("parking_data.txt", "w");
+    
+    
+    if (fp == NULL) {
+        return 0; 
+    }
+    
+    int i;
+    for (i = 0; i < TOTAL_SLOTS; i++)
+     {
+
+        fprintf(fp, "%d %d %d %s\n", lot[i].slotNo, 
+                                     lot[i].category, 
+                                     lot[i].isOccupied, 
+                                     lot[i].vehicle.plate);
+    }
+    
+    fclose(fp);
+    return 1;
+}
+
+
+
+
+void resetDailyIfNewDay(void) 
+{
+    time_t now = time(NULL);
+    struct tm *current_time = localtime(&now);
+    
+    static int last_day = -1;
+
+    if (last_day == -1)
+     {
+        last_day = current_time->tm_mday;
+        return;
+    }
+    
+    if (current_time->tm_mday != last_day) {
+
+        printf("\n[Info] New day detected. Resetting daily statistics...\n");
+        
+
+        last_day = current_time->tm_mday;
+    }
+}
 
 /* =====================================================
  *  PERSON 3 : passes, admin and main menu   (passes.c, main.c)
