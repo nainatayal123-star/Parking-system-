@@ -230,7 +230,7 @@ void vehicleEntry(void)
     /* Assign and fill slot */
     int idx = slot - 1;
     lot[idx].isOccupied = 1;
-    strncpy(lot[idx].vehicle.plate, plate_number, PLATE_LEN - 1);
+    strcpy(lot[idx].vehicle.plate, plate_number);
     lot[idx].vehicle.plate[PLATE_LEN - 1] = '\0';
     lot[idx].vehicle.type = vehicle_type;
     lot[idx].vehicle.entryTime = time(NULL);
@@ -264,7 +264,7 @@ void vehicleExit(void)
     int min = minutesParked(lot[parked].vehicle.entryTime, exit_time);
     int fee = 0;
 
-    if (lot[parked].vehicle.isPassHolder)
+    if (lot[parked].vehicle.isPassHolder == 1)
     {
         printf("Monthly pass holder. No parking fee.\n");
     }
@@ -415,7 +415,6 @@ void readString(const char *prompt, char *dest, int size)
 void viewSlots(void)   
     {
         #include <stdio.h>
-#include "parking.h"
 
 void viewSlots(void)
 {
