@@ -13,6 +13,8 @@ v/*
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
+#include <math.h>
+
 
 #ifndef PARKING_H
 #define PARKING_H
@@ -111,82 +113,208 @@ extern time_t entry_time;
 /* =====================================================
  *  PERSON 1 : core logic and real time   (entry_exit.c)
  * ===================================================== */
-int check_number_plate(char number_plate[])
+
+int findFreeSlot(int type, int isPassHolder)
 {
-    formatPlate(number_plate);
-    for (int i = 0; i < 10; i++)
+    /* 1. Pass holders first try reserved slots (251-300: indices 250-299) */
+    if (isPassHolder == 1)
     {
-        if (i == 0 || i == 1 || i == 4 || i == 5)
+        for (int i = 250; i < 300; i++)
         {
-            if (isalpha(number_plate[i]))
-            {
-                continue;
-            }
-            else
-            {
-                printf("Invalid plate number\n");
-                return 0;
-            }
-        }
-        else
-        {
-            if (isdigit(number_plate[i]))
-            {
-                continue;
-            }
-            else
-            {
-                printf("Invalid plate number\n");
-                return 0;
-            }
+            if (lot[i].isOccupied == 0)
+                return i + 1;
         }
     }
-    return 1;
+
+    /* 2. Check regular category slots */
+    if (type == TWO_WHEELER)
+    {
+        /* Slots 1-150: indices 0-149 */
+        for (int i = 0; i < 150; i++)
+        {
+            if (lot[i].isOccupied == 0)
+                return i + 1;
+        }
+    }
+    else if (type == FOUR_WHEELER)
+    {
+        /* Slots 151-250: indices 150-249 */
+        for (int i = 150; i < 250; i++)
+        {
+            if (lot[i].isOccupied == 0)
+                return i + 1;
+        }
+    }
+
+    /* 3. Pass holders can overflow into any regular slot if reserved is full */
+    if (isPassHolder == 1)
+    {
+        for (int i = 0; i < 250; i++)
+        {
+            if (lot[i].isOccupied == 0)
+                return i + 1;
+        }
+    }
+
+    return -1;
 }
-int findFreeSlot(int type, int isPassHolder); /* returns array index, or -1 if none free.
-                                                 Pass holder: reserved first, then normal.
-                                                 Others: normal slots of own type only. */
+
 int minutesParked(time_t entry, time_t exitTime)
 {
-    int minutes = 0, hours = 0;
-    int total_seconds = entry - exitTime;
-    for(int i = total_seconds ; i >= 60 ; i -= 60)
-    {
-        minutes ++;
-    }
-    return minutes;
+    if (exitTime <= entry) return 0;
+    return (int)((exitTime - entry) / 60);
 }
-int calcFee(int type, int minutes); /* <=30 min: half-hour rate;
-                                       otherwise rate * hours rounded up */
+
+int calcFee(int type, int minutes)
+{
+    if (minutes <= 0) return 0;
+
+    int halfRate = (type == TWO_WHEELER) ? RATE_TWO_HALF_HOUR : RATE_FOUR_HALF_HOUR;
+    int hourRate = (type == TWO_WHEELER) ? RATE_TWO_PER_HOUR : RATE_FOUR_PER_HOUR;
+
+    if (minutes <= 30)
+        return halfRate;
+
+    int hours = (minutes + 59) / 60; /* Round up to next full hour */
+    return hours * hourRate;
+}
+
 void vehicleEntry(void)
 {
-    char plate_number[10];
-    int vehicle_type;
-    printf("Enter the plate number : ");
-    scanf("%s", plate_number);
-    check_number_plate(plate_number);
-    findParkedVehicle(plate_number); // abhi dekh na h code ke hisab se
-    findPass(plate_number);          // abhi dekh na h code ke hisab se
-    printf("Enter the type of vehicle (1 = two wheeler , 2 = four wheeler): ");
-    scanf("%d", &vehicle_type);
-    int slot = findFreeSlot(vehicle_type, plate_number);
-    if (slot == -1);
+    char plate_number[PLATE_LEN];
+    int vehicle_type = 0;
+
+    printf("Enter the plate number: ");
+    scanf("%14s", plate_number);
+    formatPlate(plate_number);
+
+    int parked = findParkedVehicle(plate_number);
+    if (parked != -1)
     {
-        printf(" No free slot for your vehicle ");
+        printf("The vehicle is already parked in slot %d\n", parked + 1);
+        return;
     }
-    entry_time = time(NULL);
-    // fill the slot
-    today.vehiclesToday ++;
-    // print details
+
+    int pStatus = passStatus(plate_number);
+    int passholder = (pStatus == PASS_VALID) ? 1 : 0;
+
+    if (pStatus == PASS_EXPIRED)
+    {
+        printf("Your pass has expired. Standard rates apply.\n");
+    }
+
+    if (passholder == 1)
+    {
+        int pIdx = findPass(plate_number);
+        vehicle_type = passes[pIdx].type;
+        printf("Valid pass found (%s).\n", vehicle_type == TWO_WHEELER ? "Two-wheeler" : "Four-wheeler");
+    }
+    else
+    {
+        printf("Enter the type of vehicle (2 = two wheeler, 4 = four wheeler): ");
+        scanf("%d", &vehicle_type);
+        if (vehicle_type != TWO_WHEELER && vehicle_type != FOUR_WHEELER)
+        {
+            printf("Invalid vehicle type.\n");
+            return;
+        }
+    }
+
+    int slot = findFreeSlot(vehicle_type, passholder);
+    if (slot == -1)
+    {
+        printf("No free slot for your vehicle.\n");
+        return;
+    }
+
+    /* Assign and fill slot */
+    int idx = slot - 1;
+    lot[idx].isOccupied = 1;
+    strncpy(lot[idx].vehicle.plate, plate_number, PLATE_LEN - 1);
+    lot[idx].vehicle.plate[PLATE_LEN - 1] = '\0';
+    lot[idx].vehicle.type = vehicle_type;
+    lot[idx].vehicle.entryTime = time(NULL);
+    lot[idx].vehicle.isPassHolder = passholder;
+
+    today.vehiclesToday++;
+
+    struct tm *t = localtime(&lot[idx].vehicle.entryTime);
+    char time_string[30];
+    strftime(time_string, sizeof(time_string), "%H:%M:%S", t);
+
+    printf("The slot number is %d\n", slot);
+    printf("Time: %s\n", time_string);
 }
-void vehicleExit(void) 
+
+void vehicleExit(void)
 {
-    /* full exit process, bill, free slot */
+    char plate_number[PLATE_LEN];
+    printf("Enter the plate number: ");
+    scanf("%14s", plate_number);
+    formatPlate(plate_number);
+
+    int parked = findParkedVehicle(plate_number);
+    if (parked == -1)
+    {
+        printf("The vehicle is not parked.\n");
+        return;
+    }
+
     time_t exit_time = time(NULL);
-    int minutesParked(entry_time , exit_time);
+    int min = minutesParked(lot[parked].vehicle.entryTime, exit_time);
+    int fee = 0;
+
+    if (lot[parked].vehicle.isPassHolder)
+    {
+        printf("Monthly pass holder. No parking fee.\n");
+    }
+    else
+    {
+        fee = calcFee(lot[parked].vehicle.type, min);
+        today.hourlyAmount += fee;
+        printf("Parked duration: %d minutes. Total fee: Rs. %d\n", min, fee);
+    }
+
+    /* Free slot */
+    lot[parked].isOccupied = 0;
+    memset(&lot[parked].vehicle, 0, sizeof(Vehicle));
+    printf("Vehicle exited. Slot %d is now free.\n", parked + 1);
 }
-void searchVehicle(void);
-void showDailyReport(void); /* vehicles, hourly amount, pass amount, total */
+
+void searchVehicle(void)
+{
+    char plate_number[PLATE_LEN];
+    printf("Enter the plate number to search: ");
+    scanf("%14s", plate_number);
+    formatPlate(plate_number);
+
+    int parked = findParkedVehicle(plate_number);
+    if (parked == -1)
+    {
+        printf("Vehicle %s is not currently parked.\n", plate_number);
+        return;
+    }
+
+    struct tm *t = localtime(&lot[parked].vehicle.entryTime);
+    char time_string[30];
+    strftime(time_string, sizeof(time_string), "%d-%m-%Y %H:%M:%S", t);
+
+    printf("Vehicle %s found in slot %d\n", plate_number, parked + 1);
+    printf("Type: %s | Entry Time: %s | Pass Holder: %s\n",
+           lot[parked].vehicle.type == TWO_WHEELER ? "Two-wheeler" : "Four-wheeler",
+           time_string,
+           lot[parked].vehicle.isPassHolder ? "Yes" : "No");
+}
+
+void showDailyReport(void)
+{
+    printf("\n--- DAILY REPORT (%s) ---\n", today.date);
+    printf("Vehicles parked today : %d\n", today.vehiclesToday);
+    printf("Hourly amount collected: Rs. %d\n", today.hourlyAmount);
+    printf("Passes sold today      : %d\n", today.passesSoldToday);
+    printf("Pass amount collected  : Rs. %d\n", today.passAmount);
+    printf("Total revenue today    : Rs. %d\n", today.hourlyAmount + today.passAmount);
+}
 
 
   void initSlots(void)
