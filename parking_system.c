@@ -633,13 +633,13 @@ void registerPass(void)      /*for a new month pass (registration)*/
     typeChoice = readInt("Enter your choice of vehicle:",1,2);
     if (typeChoice == 1)
     {
-       type = TWO_WHEELER;
-       price = PASS_PRICE_TWO;
+       type=TWO_WHEELER;
+       price=PASS_PRICE_TWO;
     }
     else
     {
-       type = FOUR_WHEELER;
-       price = PASS_PRICE_FOUR;
+       type=FOUR_WHEELER;
+       price=PASS_PRICE_FOUR;
     }
 
     printf("pass price: Rs. %d\n", price);
@@ -660,14 +660,14 @@ void registerPass(void)      /*for a new month pass (registration)*/
     passes[passCount].startDate=currentTime;
     passes[passCount].expiryDate =currentTime+PASS_DAYS*24*60*60;
 
-    passes[passCount].active = 1;
+    passes[passCount].active=1;
     passCount++;
 
     today.passesSoldToday++;
-    today.passAmount = today.passAmount + price;
+    today.passAmount=today.passAmount+price;
     printf("Pass registered successfully!!\n");
     printf("Vehicle Number: %s\n",plate);
-    printf("Expiry Date: %s",ctime(&passes[passCount - 1].expiryDate));
+    printf("Expiry Date: %s",ctime(&passes[passCount-1].expiryDate));
 }
 void renewPass(void)                   /*renew of the existing pass*/
 {
@@ -687,7 +687,7 @@ void renewPass(void)                   /*renew of the existing pass*/
     }
     index=findPass(plate);
 
-    if (index == -1)
+    if (index==-1)
     {
         printf("Pass not found....Please register yourself first\n");
         return;
@@ -698,7 +698,7 @@ void renewPass(void)                   /*renew of the existing pass*/
     }
     else
     {
-        price = PASS_PRICE_FOUR;
+        price=PASS_PRICE_FOUR;
     }
     currentTime=time(NULL);
     if (passes[index].expiryDate>currentTime)
