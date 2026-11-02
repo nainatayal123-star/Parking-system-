@@ -123,7 +123,7 @@ void adminMenu(void);
 
 int findFreeSlot(int type, int isPassHolder)
 {
-    /* 1. Pass holders first try reserved slots (251-300 -> indices 250-299) */
+    /* 1. Pass holders first try reserved slots (251-300: indices 250-299) */
     if (isPassHolder == 1)
     {
         for (int i = 250; i < 300; i++)
@@ -136,7 +136,7 @@ int findFreeSlot(int type, int isPassHolder)
     /* 2. Check regular category slots */
     if (type == TWO_WHEELER)
     {
-        /* Slots 1-150 -> indices 0-149 */
+        /* Slots 1-150: indices 0-149 */
         for (int i = 0; i < 150; i++)
         {
             if (lot[i].isOccupied == 0)
@@ -145,7 +145,7 @@ int findFreeSlot(int type, int isPassHolder)
     }
     else if (type == FOUR_WHEELER)
     {
-        /* Slots 151-250 -> indices 150-249 */
+        /* Slots 151-250: indices 150-249 */
         for (int i = 150; i < 250; i++)
         {
             if (lot[i].isOccupied == 0)
@@ -486,15 +486,20 @@ int loadData(void)
     for (int i = 0; i < TOTAL_SLOTS; i++)
     {
         char tempPlate[PLATE_LEN];
-        if (fscanf(fp, "%d %d %d %14s",
+        long tempTime = 0;
+
+        if (fscanf(fp, "%d %d %d %14s %ld",
                    &lot[i].slotNo,
                    &lot[i].category,
                    &lot[i].isOccupied,
-                   tempPlate) != 4)
+                   tempPlate,
+                   &tempTime) != 5)
         {
             fclose(fp);
             return 0;
         }
+
+        lot[i].vehicle.entryTime = (time_t)tempTime;
 
         if (strcmp(tempPlate, "NONE") != 0 && lot[i].isOccupied)
         {
@@ -523,11 +528,12 @@ int saveData(void)
                             ? lot[i].vehicle.plate 
                             : "NONE";
 
-        fprintf(fp, "%d %d %d %s\n",
+        fprintf(fp, "%d %d %d %s %ld\n",
                 lot[i].slotNo,
                 lot[i].category,
                 lot[i].isOccupied,
-                plate);
+                plate,
+                (long)lot[i].vehicle.entryTime);
     }
 
     fclose(fp);
