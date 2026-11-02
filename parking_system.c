@@ -15,7 +15,6 @@
 #include <ctype.h>
 #include <math.h>
 
-
 #ifndef PARKING_H
 #define PARKING_H
 
@@ -114,17 +113,16 @@ int findPass(const char *plate);
 
 #endif
 
-void initSlots(void);                          /* sets slotNo, category, isOccupied = 0 */
-int  findParkedVehicle(const char *plate);     /* returns array index of the slot, or -1 */
-void formatPlate(char *plate);                 /* capital letters, remove spaces */
-int  readInt(const char *prompt, int min, int max);
+void initSlots(void);                     /* sets slotNo, category, isOccupied = 0 */
+int findParkedVehicle(const char *plate); /* returns array index of the slot, or -1 */
+void formatPlate(char *plate);            /* capital letters, remove spaces */
+int readInt(const char *prompt, int min, int max);
 void readString(const char *prompt, char *dest, int size);
-void viewSlots(void);                          /* all / free / reserved */
-int  loadData(void);                           /* read slots, passes, daily record.
-                                                  Must restore entryTime and isPassHolder. */
-int  saveData(void);                           /* write all of them back */
-void resetDailyIfNewDay(void);                 /* if date changed, start a new daily record */
-
+void viewSlots(void);          /* all / free / reserved */
+int loadData(void);            /* read slots, passes, daily record.
+                                  Must restore entryTime and isPassHolder. */
+int saveData(void);            /* write all of them back */
+void resetDailyIfNewDay(void); /* if date changed, start a new daily record */
 
 int findFreeSlot(int type, int isPassHolder)
 {
@@ -528,26 +526,23 @@ int saveData(void)
     return 1;
 }
 
-
-
-
-void resetDailyIfNewDay(void) 
+void resetDailyIfNewDay(void)
 {
     time_t now = time(NULL);
     struct tm *current_time = localtime(&now);
-    
+
     static int last_day = -1;
 
     if (last_day == -1)
-     {
+    {
         last_day = current_time->tm_mday;
         return;
     }
-    
-    if (current_time->tm_mday != last_day) {
+
+    if (current_time->tm_mday != last_day)
+    {
 
         printf("\n[Info] New day detected. Resetting daily statistics...\n");
-        
 
         last_day = current_time->tm_mday;
     }
@@ -566,30 +561,29 @@ int adminLogin(void); /* 1 if password correct, else 0 */
 void adminMenu(void); /* report, pass options */
 /* main() is also written by Person 3 */
 
-
 //****************(passes.c)*******************
 
 int findPass(const char *plate)
 {
-int i;
-for (i = 0; i < passCount; i++)
-{
-   if (passes[i].active == 1 &&
-   strcmp(passes[i].plate, plate) == 0)
-  {
-    return i;
-   }
-}
+    int i;
+    for (i = 0; i < passCount; i++)
+    {
+        if (passes[i].active == 1 &&
+            strcmp(passes[i].plate, plate) == 0)
+        {
+            return i;
+        }
+    }
     return -1;
 }
-int passStatus(const char *plate)           /*check whether a pass is valid or not */
+int passStatus(const char *plate) /*check whether a pass is valid or not */
 {
     int index;
     time_t currentTime;
     index = findPass(plate);
     if (index == -1)
     {
-       return PASS_NONE;
+        return PASS_NONE;
     }
     currentTime = time(NULL);
 
@@ -602,13 +596,13 @@ int passStatus(const char *plate)           /*check whether a pass is valid or n
         return PASS_EXPIRED;
     }
 }
-void registerPass(void)      /*for a new month pass (registration)*/
+void registerPass(void) /*for a new month pass (registration)*/
 {
-   char plate[PLATE_LEN];
-   char name[NAME_LEN];
-   int typeChoice,type,price,index,confirm;
-   time_t currentTime;
-   printf("\n***** REGISTER MONTHLY PASS *****\n");
+    char plate[PLATE_LEN];
+    char name[NAME_LEN];
+    int typeChoice, type, price, index, confirm;
+    time_t currentTime;
+    printf("\n***** REGISTER MONTHLY PASS *****\n");
 
     if (passCount >= MAX_PASSES)
     {
@@ -638,35 +632,35 @@ void registerPass(void)      /*for a new month pass (registration)*/
     printf("1. Two Wheeler\n");
     printf("2. Four Wheeler\n");
 
-    typeChoice = readInt("Enter your choice of vehicle:",1,2);
+    typeChoice = readInt("Enter your choice of vehicle:", 1, 2);
     if (typeChoice == 1)
     {
-       type = TWO_WHEELER;
-       price = PASS_PRICE_TWO;
+        type = TWO_WHEELER;
+        price = PASS_PRICE_TWO;
     }
     else
     {
-       type = FOUR_WHEELER;
-       price = PASS_PRICE_FOUR;
+        type = FOUR_WHEELER;
+        price = PASS_PRICE_FOUR;
     }
 
     printf("Pass price: Rs. %d\n", price);
     printf("Pass validity: %d days\n", PASS_DAYS);
 
-    confirm = readInt("Confirm payment? (1=Yes,0=No):",0,1);
+    confirm = readInt("Confirm payment? (1=Yes,0=No):", 0, 1);
     if (confirm == 0)
     {
         printf("Pass registration is cancelled\n");
         return;
     }
 
-    currentTime=time(NULL);
-    strcpy(passes[passCount].plate,plate);
-    strcpy(passes[passCount].ownerName,name);
+    currentTime = time(NULL);
+    strcpy(passes[passCount].plate, plate);
+    strcpy(passes[passCount].ownerName, name);
 
-    passes[passCount].type=type;
-    passes[passCount].startDate=currentTime;
-    passes[passCount].expiryDate =currentTime+PASS_DAYS*24*60*60;
+    passes[passCount].type = type;
+    passes[passCount].startDate = currentTime;
+    passes[passCount].expiryDate = currentTime + PASS_DAYS * 24 * 60 * 60;
 
     passes[passCount].active = 1;
     passCount++;
@@ -674,42 +668,42 @@ void registerPass(void)      /*for a new month pass (registration)*/
     today.passesSoldToday++;
     today.passAmount = today.passAmount + price;
     printf("Pass registered successfully!!\n");
-    printf("Vehicle Number: %s\n",plate);
-    printf("Expiry Date: %s",ctime(&passes[passCount - 1].expiryDate));
+    printf("Vehicle Number: %s\n", plate);
+    printf("Expiry Date: %s", ctime(&passes[passCount - 1].expiryDate));
 }
-void renewPass(void)                   /*renew of the existing pass*/
+void renewPass(void) /*renew of the existing pass*/
 {
     char plate[PLATE_LEN];
-    int index,price;
+    int index, price;
     time_t currentTime;
     time_t newStartDate;
 
     printf("*****RENEW MONTHLY PASS******\n");
-    readString("Enter the vehicle number:",plate,PLATE_LEN);
+    readString("Enter the vehicle number:", plate, PLATE_LEN);
     formatPlate(plate);
 
-    if (strlen(plate)==0)
+    if (strlen(plate) == 0)
     {
         printf("\nVehicle number cannot be empty\n");
         return;
     }
-    index=findPass(plate);
+    index = findPass(plate);
 
     if (index == -1)
     {
         printf("Pass not found....Please register yourself first\n");
         return;
     }
-    if (passes[index].type==TWO_WHEELER)
+    if (passes[index].type == TWO_WHEELER)
     {
-        price=PASS_PRICE_TWO;
+        price = PASS_PRICE_TWO;
     }
     else
     {
         price = PASS_PRICE_FOUR;
     }
-    currentTime=time(NULL);
-    if (passes[index].expiryDate>currentTime)
+    currentTime = time(NULL);
+    if (passes[index].expiryDate > currentTime)
     {
         newStartDate = passes[index].expiryDate;
     }
@@ -718,68 +712,68 @@ void renewPass(void)                   /*renew of the existing pass*/
         newStartDate = currentTime;
     }
 
-    passes[index].startDate=newStartDate;
-    passes[index].expiryDate=newStartDate+PASS_DAYS*24*60*60;
+    passes[index].startDate = newStartDate;
+    passes[index].expiryDate = newStartDate + PASS_DAYS * 24 * 60 * 60;
 
     today.passesSoldToday++;
-    today.passAmount=today.passAmount+price;
+    today.passAmount = today.passAmount + price;
 
     printf("Pass renewed successfully\n");
-    printf("Renewal amount: Rs. %d\n",price);
-    printf("New expiry date: %s",ctime(&passes[index].expiryDate));
+    printf("Renewal amount: Rs. %d\n", price);
+    printf("New expiry date: %s", ctime(&passes[index].expiryDate));
 }
 
 void cancelPass(void)
 {
     char plate[PLATE_LEN];
-    int index,confirm;
+    int index, confirm;
 
     printf("******CANCEL MONTHLY PASS*******\n");
 
-    readString("Enter vehicle number: ",plate,PLATE_LEN);
+    readString("Enter vehicle number: ", plate, PLATE_LEN);
     formatPlate(plate);
 
-    if (strlen(plate)==0)
+    if (strlen(plate) == 0)
     {
         printf("\nVehicle number cannot be empty\n");
         return;
     }
 
-    index=findPass(plate);
+    index = findPass(plate);
 
-    if (index==-1)
+    if (index == -1)
     {
         printf("Pass is not found\n");
         return;
     }
 
-    confirm=readInt("Are you sure you want to cancel? (1=Yes,0=No):",0,1);
-    if (confirm==0)
+    confirm = readInt("Are you sure you want to cancel? (1=Yes,0=No):", 0, 1);
+    if (confirm == 0)
     {
         printf("Pass cancellation stopped\n");
         return;
     }
-    passes[index].active=0;
+    passes[index].active = 0;
 
     printf("Pass cancelled successfully\n");
     printf("No refund will be given\n");
 }
 
-void listPasses(void)             /*displaying of all active montly pass*/
+void listPasses(void) /*displaying of all active montly pass*/
 {
-    int i,count=0;
+    int i, count = 0;
 
     printf("*******MONTHLY PASSES********\n");
-    for(i=0;i<passCount;i++)
+    for (i = 0; i < passCount; i++)
     {
-        if (passes[i].active==1)
+        if (passes[i].active == 1)
         {
             count++;
 
-            printf("Owner name:%s\n",passes[i].ownerName);
-            printf("Vehicle number:%s\n",passes[i].plate);
+            printf("Owner name:%s\n", passes[i].ownerName);
+            printf("Vehicle number:%s\n", passes[i].plate);
 
-            if (passes[i].type==TWO_WHEELER)
+            if (passes[i].type == TWO_WHEELER)
             {
                 printf("Vehicle Type:Two wheeler\n");
             }
@@ -787,9 +781,9 @@ void listPasses(void)             /*displaying of all active montly pass*/
             {
                 printf("Vehicle type:Four wheeler\n");
             }
-            printf("Expiry Date:%s",ctime(&passes[i].expiryDate));
+            printf("Expiry Date:%s", ctime(&passes[i].expiryDate));
 
-            if (passStatus(passes[i].plate)==PASS_VALID)
+            if (passStatus(passes[i].plate) == PASS_VALID)
             {
                 printf("Pass Status:VALID\n");
             }
@@ -800,20 +794,20 @@ void listPasses(void)             /*displaying of all active montly pass*/
         }
     }
 
-    if (count==0)
+    if (count == 0)
     {
         printf("No active passes found\n");
     }
 }
 int adminLogin(void)
 {
-    char password[50],attempts;
+    char password[50], attempts;
     printf("********ADMIN LOGIN*********\n");
-    for(attempts=1;attempts<=3;attempts++)
+    for (attempts = 1; attempts <= 3; attempts++)
     {
-        readString("Enter admin password:",password,50);
+        readString("Enter admin password:", password, 50);
 
-        if(strcmp(password,ADMIN_PASSWORD)==0)
+        if (strcmp(password, ADMIN_PASSWORD) == 0)
         {
             printf("login successful\n");
             return 1;
@@ -838,41 +832,40 @@ void adminMenu(void)
         printf("3.Renew monthly pass\n");
         printf("4.Cancel monthly pass\n");
         printf("5.List of monthly passes\n");
-        printf("0.Back to Main Menu\n");
+        printf("6.Back to Main Menu\n");
 
-
-        scanf("%d",&choice);
+        choice = readInt("Enter your choice:", 1, 6);
 
         switch (choice)
         {
-            case 1:
-                showDailyReport();
-                break;
+        case 1:
+            showDailyReport();
+            break;
 
-            case 2:
-                registerPass();
-                saveData();
-                break;
+        case 2:
+            registerPass();
+            saveData();
+            break;
 
-            case 3:
-                renewPass();
-                saveData();
-                break;
+        case 3:
+            renewPass();
+            saveData();
+            break;
 
-            case 4:
-                cancelPass();
-                saveData();
-                break;
+        case 4:
+            cancelPass();
+            saveData();
+            break;
 
-            case 5:
-                listPasses();
-                break;
+        case 5:
+            listPasses();
+            break;
 
-            case 6:
-                printf("back to the main menu\n");
-                break;
+        case 6:
+            printf("back to the main menu\n");
+            break;
         }
-    } while (choice!=0);
+    } while (choice != 6);
 }
 
 int main(void)
@@ -897,42 +890,42 @@ int main(void)
         printf("3. Search vehicle\n");
         printf("4. View parking slots\n");
         printf("5. Admin\n");
-        printf("0. Quit\n");
+        printf("6. Quit\n");
 
-        choice = readInt("Enter your choice:",0,5);
+        choice = readInt("Enter your choice:", 1, 6);
         switch (choice)
         {
-            case 1:
-                vehicleEntry();
+        case 1:
+            vehicleEntry();
+            saveData();
+            break;
+
+        case 2:
+            vehicleExit();
+            saveData();
+            break;
+
+        case 3:
+            searchVehicle();
+            break;
+
+        case 4:
+            viewSlots();
+            break;
+
+        case 5:
+            if (adminLogin() == 1)
+            {
+                adminMenu();
                 saveData();
-                break;
+            }
+            break;
 
-            case 2:
-                vehicleExit();
-                saveData();
-                break;
-
-            case 3:
-                searchVehicle();
-                break;
-
-            case 4:
-                viewSlots();
-                break;
-
-            case 5:
-                if (adminLogin() == 1)
-                {
-                    adminMenu();
-                    saveData();
-                }
-                break;
-
-            case 0:
-                saveData();
-                printf("data is saved successfully\n");
-                printf("Thank you for using the system!!\n");
-                break;
+        case 6:
+            saveData();
+            printf("data is saved successfully\n");
+            printf("Thank you for using the system!!\n");
+            break;
         }
     } while (choice != 0);
 }
